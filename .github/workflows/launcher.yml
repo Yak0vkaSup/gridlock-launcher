@@ -60,3 +60,5 @@ jobs:
           releaseDraft: false
           prerelease: false
           includeUpdaterJson: true
+          # tauri-bundler downloads linuxdeploy/AppRun from GitHub at bundle time; a reset connection failed a run once.
+          retryAttempts: 2
