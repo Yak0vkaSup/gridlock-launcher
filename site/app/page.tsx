@@ -7,10 +7,10 @@ const REPO = process.env.NEXT_PUBLIC_LAUNCHER_REPO ?? "Yak0vkaSup/gridlock-launc
 
 async function latestLauncher(): Promise<Release | null> {
   try {
-    const res = await fetch(`https://api.github.com/repos/${REPO}/releases/latest`, {
-      headers: { accept: "application/vnd.github+json" },
-      next: { revalidate: 300 },
-    });
+    // GITHUB_TOKEN (server-side, optional) lets this work while the launcher repo is private
+    const headers: Record<string, string> = { accept: "application/vnd.github+json" };
+    if (process.env.GITHUB_TOKEN) headers.authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
+    const res = await fetch(`https://api.github.com/repos/${REPO}/releases/latest`, { headers, next: { revalidate: 300 } });
     if (!res.ok) return null;
     return (await res.json()) as Release;
   } catch {
