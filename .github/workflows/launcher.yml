@@ -17,7 +17,10 @@ jobs:
       matrix:
         include:
           - os: ubuntu-22.04
+            # Wrapper around `tauri build`: repacks the AppImage without the bundled libwayland (see the script).
+            tauriScript: bash scripts/tauri-build.sh
           - os: windows-latest
+            tauriScript: ""
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -36,7 +39,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev patchelf
+          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev patchelf squashfs-tools
 
       - name: npm ci
         working-directory: launcher
@@ -50,6 +53,7 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ""
         with:
           projectPath: launcher
+          tauriScript: ${{ matrix.tauriScript }}
           tagName: launcher-v__VERSION__
           releaseName: "GridLock Launcher v__VERSION__"
           releaseBody: "Windows: the -setup.exe. Linux: the .AppImage (chmod +x) or the .deb."
