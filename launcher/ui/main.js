@@ -93,6 +93,13 @@ const doInstall = () => run(async () => {
 });
 
 const doPlay = () => run(async () => {
+  // never start a stale build: look at the manifest once more right before launching
+  $("status").textContent = "Checking version…";
+  ui.check = await invoke("check");
+  if (!ui.check.up_to_date) {
+    $("detail").textContent = "A new build is out. Update first.";
+    return;
+  }
   await invoke("play");
   $("detail").textContent = "Game started.";
 });
@@ -117,19 +124,33 @@ $("btn-verify").onclick = () => run(async () => {
 
 T.event.listen("progress", (ev) => { const p = ev.payload; setProgress(p.done, p.total, p.file); });
 
-// launcher self-update (signed, from GitHub Releases); the game update is separate
-(async () => {
+// launcher self-update (signed, from GitHub Releases): installs itself and restarts before
+// anything else happens, so nobody keeps an old launcher around. Offline: carry on as we are.
+async function selfUpdate() {
+  let update = null;
+  try { update = await T.updater.check(); } catch (_) { return false; }
+  if (!update) return false;
+  ui.busy = true; render();
+  $("status").textContent = `Updating launcher to ${update.version}…`;
+  $("detail").textContent = "It restarts by itself.";
   try {
-    const update = await T.updater.check();
-    if (update) {
-      $("launcher-update").hidden = false;
-      $("btn-launcher-update").onclick = async () => {
-        $("btn-launcher-update").disabled = true;
-        try { await update.downloadAndInstall(); await T.process.relaunch(); }
-        catch (e) { setError("Launcher update failed: " + (e && e.message ? e.message : e)); $("btn-launcher-update").disabled = false; }
-      };
-    }
-  } catch (_) { /* offline or no release yet */ }
-})();
+    await update.downloadAndInstall((ev) => {
+      if (ev.event === "Progress" && ev.data && ev.data.chunkLength) selfUpdate.done = (selfUpdate.done || 0) + ev.data.chunkLength;
+      if (ev.event === "Started" && ev.data && ev.data.contentLength) selfUpdate.total = ev.data.contentLength;
+      if (selfUpdate.total) setProgress(selfUpdate.done || 0, selfUpdate.total, "launcher");
+    });
+    await T.process.relaunch();
+    return true;
+  } catch (e) {
+    ui.busy = false;
+    setError("Launcher update failed: " + (e && e.message ? e.message : e));
+    $("launcher-update").hidden = false;
+    $("btn-launcher-update").onclick = () => selfUpdate();
+    return false;
+  }
+}
 
-refresh().catch((e) => setError(String(e)));
+(async () => {
+  if (await selfUpdate()) return;
+  await refresh().catch((e) => setError(String(e)));
+})();
