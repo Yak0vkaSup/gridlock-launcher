@@ -43,6 +43,8 @@ a { color: inherit; }
 .hint { color: var(--muted-2); font-size: 12px; margin: 0; max-width: 520px; }
 .hint b { color: var(--muted); font-weight: 500; }
 .version { color: var(--muted-2); font-size: 12px; margin: 0; }
+.discord { color: var(--muted-2); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; text-decoration: none; }
+.discord:hover { color: var(--accent); }
 .center { display: grid; place-items: center; min-height: 50vh; text-align: center; }
 .center h2 { margin: 0 0 8px; font-weight: 600; }
 .center p { color: var(--muted); margin: 0; }

@@ -42,6 +42,9 @@ export default async function Home() {
         <b>Windows:</b> SmartScreen may warn about the unsigned launcher. More info, then Run anyway.
       </p>
       {rel ? <p className="version">launcher {rel.tag_name.replace("launcher-", "")}</p> : null}
+      <a className="discord" href="https://discord.gg/Jqk43grKU" target="_blank" rel="noopener noreferrer">
+        Discord
+      </a>
     </main>
   );
 }
