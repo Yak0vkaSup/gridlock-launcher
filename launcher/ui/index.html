@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GridLock</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="top">
+    <div class="brand">GRID<span>LOCK</span> <em id="launcher-version"></em></div>
+    <div class="user">
+      <span id="user-name" class="muted"></span>
+      <button id="btn-logout" class="link" hidden>Sign out</button>
+    </div>
+  </header>
+
+  <main>
+    <div id="status" class="status">Starting…</div>
+    <div id="detail" class="detail muted"></div>
+    <div class="bar" id="bar" hidden><div class="fill" id="fill"></div></div>
+    <button id="btn-main" class="main" disabled>…</button>
+    <div id="error" class="error" hidden></div>
+    <div id="launcher-update" class="update" hidden>
+      Launcher update available. <button id="btn-launcher-update" class="link">Install and restart</button>
+    </div>
+  </main>
+
+  <footer class="bottom">
+    <span class="muted">Install folder:</span>
+    <span id="install-dir" class="path"></span>
+    <button id="btn-dir" class="link">Change</button>
+    <button id="btn-open" class="link">Open</button>
+    <span class="spacer"></span>
+    <button id="btn-verify" class="link">Verify files</button>
+  </footer>
+
+  <script src="main.js"></script>
+</body>
+</html>

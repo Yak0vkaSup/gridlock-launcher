@@ -1,0 +1,26 @@
+:root { --bg:#0c0e11; --panel:#14171c; --line:#262b33; --fg:#d9d5ca; --muted:#8a8f99; --accent:#c9a961; --accent-fg:#0c0e11; --danger:#b5533c; }
+* { box-sizing: border-box; user-select: none; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg); font: 14px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; overflow: hidden; }
+body { display: grid; grid-template-rows: 56px 1fr 48px; height: 100vh; }
+.top { display: flex; align-items: center; justify-content: space-between; padding: 0 24px; border-bottom: 1px solid var(--line); }
+.brand { font-weight: 700; letter-spacing: .24em; font-size: 13px; }
+.brand span { color: var(--accent); }
+.brand em { font-style: normal; letter-spacing: 0; font-weight: 400; color: var(--muted); margin-left: 10px; font-size: 12px; }
+.user { display: flex; gap: 14px; align-items: center; font-size: 13px; }
+main { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 0 48px; }
+.status { font-size: 22px; font-weight: 600; text-align: center; }
+.detail { font-size: 13px; min-height: 1.5em; text-align: center; }
+.muted { color: var(--muted); }
+.bar { width: 100%; max-width: 560px; height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; }
+.fill { height: 100%; width: 0%; background: var(--accent); transition: width .15s linear; }
+.main { margin-top: 10px; min-width: 260px; padding: 14px 28px; font: inherit; font-size: 15px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--accent-fg); background: var(--accent); border: 0; border-radius: 6px; cursor: pointer; }
+.main:disabled { opacity: .35; cursor: default; }
+.main:not(:disabled):hover { filter: brightness(1.08); }
+.error { color: var(--danger); font-size: 13px; max-width: 560px; text-align: center; white-space: pre-wrap; }
+.update { font-size: 13px; color: var(--muted); }
+.bottom { display: flex; align-items: center; gap: 10px; padding: 0 24px; border-top: 1px solid var(--line); font-size: 12px; }
+.path { color: var(--fg); max-width: 380px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; direction: rtl; }
+.spacer { flex: 1; }
+.link { background: none; border: 0; color: var(--accent); cursor: pointer; font: inherit; font-size: 12px; padding: 4px 6px; }
+.link:hover { text-decoration: underline; }
+.link:disabled { opacity: .4; cursor: default; text-decoration: none; }

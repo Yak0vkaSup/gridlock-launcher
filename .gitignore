@@ -1,0 +1,9 @@
+node_modules/
+.env
+.env.local
+.vercel/
+site/.next/
+site/out/
+launcher/src-tauri/target/
+launcher/src-tauri/gen/schemas/
+launcher/app-icon.png

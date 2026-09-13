@@ -1,0 +1,39 @@
+:root {
+  --bg: #0c0e11;
+  --panel: #14171c;
+  --line: #262b33;
+  --fg: #d9d5ca;
+  --muted: #8a8f99;
+  --accent: #c9a961;
+  --accent-fg: #0c0e11;
+  --danger: #b5533c;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: var(--bg); color: var(--fg); }
+body { font: 15px/1.55 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; min-height: 100vh; }
+a { color: inherit; }
+.shell { max-width: 960px; margin: 0 auto; padding: 0 20px 64px; }
+.top { display: flex; align-items: center; justify-content: space-between; height: 64px; border-bottom: 1px solid var(--line); }
+.brand { font-weight: 700; letter-spacing: 0.24em; text-decoration: none; font-size: 14px; }
+.brand span { color: var(--accent); }
+.hero { padding: 72px 0 40px; border-bottom: 1px solid var(--line); }
+.hero h1 { font-size: 40px; line-height: 1.1; margin: 0 0 16px; letter-spacing: -0.01em; }
+.hero p { color: var(--muted); max-width: 560px; margin: 0 0 32px; font-size: 16px; }
+.downloads { display: flex; gap: 12px; flex-wrap: wrap; }
+.btn { display: inline-flex; align-items: center; gap: 10px; padding: 12px 18px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel); color: var(--fg); text-decoration: none; font-weight: 600; font-size: 14px; }
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn.disabled { opacity: 0.45; pointer-events: none; }
+.btn small { color: inherit; opacity: 0.7; font-weight: 400; }
+.steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; padding: 40px 0; }
+.step { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 18px; }
+.step b { display: block; color: var(--accent); font-size: 12px; letter-spacing: 0.18em; margin-bottom: 8px; }
+.note { color: var(--muted); font-size: 13px; border-left: 2px solid var(--line); padding-left: 12px; }
+.center { display: grid; place-items: center; min-height: 60vh; text-align: center; }
+.center h2 { margin: 0 0 8px; }
+.center p { color: var(--muted); }
+.signin { padding: 8px 14px; border: 1px solid var(--line); border-radius: 6px; background: transparent; color: var(--fg); cursor: pointer; font: inherit; }
+.signin:hover { border-color: var(--accent); }
+.footer { color: var(--muted); font-size: 12px; padding-top: 24px; border-top: 1px solid var(--line); margin-top: 24px; }
