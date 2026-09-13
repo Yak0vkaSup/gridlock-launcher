@@ -3,7 +3,7 @@
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
-pub const DEFAULT_SITE: &str = "https://gridlock.vercel.app";
+pub const DEFAULT_SITE: &str = "https://gridlock-umber.vercel.app";
 
 #[derive(Serialize, Deserialize, Default, Clone, Debug)]
 pub struct Config {
