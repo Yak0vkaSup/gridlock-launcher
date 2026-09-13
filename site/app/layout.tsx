@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { ClerkProvider, SignInButton, SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
+import { ClerkProvider, Show, SignInButton, UserButton } from "@clerk/nextjs";
 import Link from "next/link";
 import "./globals.css";
 
@@ -17,14 +17,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <header className="top">
               <Link href="/" className="brand">GRID<span>LOCK</span></Link>
               <nav>
-                <SignedOut>
+                <Show when="signed-out">
                   <SignInButton mode="modal">
                     <button className="signin">Sign in</button>
                   </SignInButton>
-                </SignedOut>
-                <SignedIn>
+                </Show>
+                <Show when="signed-in">
                   <UserButton />
-                </SignedIn>
+                </Show>
               </nav>
             </header>
             {children}

@@ -1,4 +1,4 @@
-import { SignUpButton, SignedOut } from "@clerk/nextjs";
+import { Show, SignUpButton } from "@clerk/nextjs";
 
 type Asset = { name: string; browser_download_url: string; size: number };
 type Release = { tag_name: string; html_url: string; assets: Asset[] };
@@ -54,11 +54,11 @@ export default async function Home() {
         <div className="step"><b>03 PLAY</b>Install, then Play. Updates are picked up automatically on every start.</div>
       </section>
 
-      <SignedOut>
+      <Show when="signed-out">
         <p style={{ marginBottom: 24 }}>
           <SignUpButton mode="modal"><button className="btn">Create an account</button></SignUpButton>
         </p>
-      </SignedOut>
+      </Show>
 
       <p className="note">
         Windows may show a SmartScreen warning because the launcher is not code-signed yet:
