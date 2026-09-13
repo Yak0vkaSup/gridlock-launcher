@@ -1,4 +1,4 @@
-import { Show, SignUpButton } from "@clerk/nextjs";
+import Image from "next/image";
 
 type Asset = { name: string; browser_download_url: string; size: number };
 type Release = { tag_name: string; html_url: string; assets: Asset[] };
@@ -23,49 +23,28 @@ const mb = (n: number) => `${(n / 1048576).toFixed(0)} MB`;
 export default async function Home() {
   const rel = await latestLauncher();
   const find = (pred: (n: string) => boolean) => rel?.assets.find((a) => pred(a.name.toLowerCase()));
-  const win = find((n) => n.endsWith("-setup.exe") || n.endsWith(".exe"));
-  const appimage = find((n) => n.endsWith(".appimage"));
-  const deb = find((n) => n.endsWith(".deb"));
+  const win = find((n) => n.endsWith("-setup.exe"));
+  const linux = find((n) => n.endsWith(".appimage"));
 
   return (
-    <main>
-      <section className="hero">
-        <h1>Closed demo</h1>
-        <p>
-          Install the launcher, sign in, press Play. The launcher keeps the game up to date:
-          after every new build it downloads only what changed.
-        </p>
-        <div className="downloads">
-          <a className={`btn primary ${win ? "" : "disabled"}`} href={win?.browser_download_url ?? "#"}>
-            Windows <small>{win ? mb(win.size) : "soon"}</small>
-          </a>
-          <a className={`btn ${appimage ? "" : "disabled"}`} href={appimage?.browser_download_url ?? "#"}>
-            Linux AppImage <small>{appimage ? mb(appimage.size) : "soon"}</small>
-          </a>
-          <a className={`btn ${deb ? "" : "disabled"}`} href={deb?.browser_download_url ?? "#"}>
-            Linux .deb <small>{deb ? mb(deb.size) : "soon"}</small>
-          </a>
-        </div>
-      </section>
-
-      <section className="steps">
-        <div className="step"><b>01 INSTALL</b>Get the launcher for your system. It is small; the game itself comes through it.</div>
-        <div className="step"><b>02 SIGN IN</b>Create an account here, then press Sign in inside the launcher. It opens this site once and remembers you.</div>
-        <div className="step"><b>03 PLAY</b>Install, then Play. Updates are picked up automatically on every start.</div>
-      </section>
-
-      <Show when="signed-out">
-        <p style={{ marginBottom: 24 }}>
-          <SignUpButton mode="modal"><button className="btn">Create an account</button></SignUpButton>
-        </p>
-      </Show>
-
-      <p className="note">
-        Windows may show a SmartScreen warning because the launcher is not code-signed yet:
-        choose &ldquo;More info&rdquo;, then &ldquo;Run anyway&rdquo;.
-        {rel ? <> Launcher {rel.tag_name}.</> : null}
+    <main className="hero">
+      <Image src="/logo.png" alt="GridLock" width={2172} height={724} priority className="logo" />
+      <p className="tagline">Closed demo. Install the launcher, sign in, play.</p>
+      <div className="downloads">
+        <a className={`btn primary ${win ? "" : "disabled"}`} href={win?.browser_download_url ?? "#"}>
+          Windows <small>{win ? mb(win.size) : "soon"}</small>
+        </a>
+        <a className={`btn ${linux ? "" : "disabled"}`} href={linux?.browser_download_url ?? "#"}>
+          Linux <small>{linux ? mb(linux.size) : "soon"}</small>
+        </a>
+      </div>
+      <p className="hint">
+        <b>Windows:</b> SmartScreen may warn about the unsigned launcher. More info, then Run anyway.
       </p>
-      <footer className="footer">GridLock demo. Builds are private and tied to your account.</footer>
+      <footer className="footer" style={{ width: "100%", marginTop: 32 }}>
+        <span>GridLock</span>
+        <span>{rel ? `launcher ${rel.tag_name.replace("launcher-", "")}` : ""}</span>
+      </footer>
     </main>
   );
 }
