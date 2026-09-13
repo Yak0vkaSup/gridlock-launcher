@@ -41,10 +41,7 @@ export default async function Home() {
       <p className="hint">
         <b>Windows:</b> SmartScreen may warn about the unsigned launcher. More info, then Run anyway.
       </p>
-      <footer className="footer" style={{ width: "100%", marginTop: 32 }}>
-        <span>GridLock</span>
-        <span>{rel ? `launcher ${rel.tag_name.replace("launcher-", "")}` : ""}</span>
-      </footer>
+      {rel ? <p className="version">launcher {rel.tag_name.replace("launcher-", "")}</p> : null}
     </main>
   );
 }
