@@ -1,5 +1,7 @@
 //! The game folder: what is installed, what the newest manifest wants, and the download that gets
 //! from one to the other (content-addressed files, resumable, hash-checked, four at a time).
+//! Two wire formats: raw objects (one GET per file, resumed with Range) and glb1 blobs (see delta.rs:
+//! only the blocks the old copy lacks are fetched).
 
 use crate::net::{Manifest, ManifestFile};
 use anyhow::{anyhow, bail, Context};
@@ -49,6 +51,7 @@ pub fn save_installed(dir: &Path, installed: &Installed) -> anyhow::Result<()> {
 }
 
 /// Files the manifest wants that are not on disk in the right version, and files to remove.
+/// `bytes` is the upper bound of the download: the whole stored size of every file to fetch.
 pub struct Plan {
     pub to_download: Vec<ManifestFile>,
     pub bytes: u64,
@@ -77,7 +80,7 @@ pub fn plan(dir: &Path, manifest: &Manifest, installed: Option<&Installed>) -> a
         let same = have.get(f.path.as_str()).is_some_and(|h| h.sha256 == f.sha256)
             && on_disk == Some(f.size);
         if !same {
-            bytes += f.size;
+            bytes += f.stored.unwrap_or(f.size);
             to_download.push(f.clone());
         }
     }
@@ -90,29 +93,43 @@ pub fn plan(dir: &Path, manifest: &Manifest, installed: Option<&Installed>) -> a
     Ok(Plan { to_download, bytes, to_delete })
 }
 
-#[derive(Serialize, Clone)]
+#[derive(Serialize, Clone, Debug)]
 pub struct Progress {
+    /// bytes of the plan accounted for (reused or downloaded)
     pub done: u64,
     pub total: u64,
+    /// bytes that actually came over the network
+    pub downloaded: u64,
     pub file: String,
 }
 
+/// Where progress goes: the window in the app, a counter in tests.
+pub trait ProgressSink: Send + Sync {
+    fn progress(&self, p: Progress);
+}
+
+impl ProgressSink for AppHandle {
+    fn progress(&self, p: Progress) {
+        let _ = self.emit("progress", p);
+    }
+}
+
 struct Reporter {
-    app: AppHandle,
+    sink: Arc<dyn ProgressSink>,
     done: AtomicU64,
+    downloaded: AtomicU64,
     total: u64,
     last: Mutex<Instant>,
-    current: Mutex<String>,
 }
 
 impl Reporter {
-    fn add(&self, n: u64, file: &str) {
-        let done = self.done.fetch_add(n, Ordering::Relaxed) + n;
+    fn add(&self, done: u64, downloaded: u64, file: &str) {
+        let d = self.done.fetch_add(done, Ordering::Relaxed) + done;
+        let n = self.downloaded.fetch_add(downloaded, Ordering::Relaxed) + downloaded;
         let mut last = self.last.lock().unwrap();
-        if last.elapsed() >= Duration::from_millis(150) || done >= self.total {
+        if last.elapsed() >= Duration::from_millis(150) || d >= self.total {
             *last = Instant::now();
-            *self.current.lock().unwrap() = file.to_string();
-            let _ = self.app.emit("progress", Progress { done, total: self.total, file: file.to_string() });
+            self.sink.progress(Progress { done: d, total: self.total, downloaded: n, file: file.to_string() });
         }
     }
 }
@@ -132,20 +149,9 @@ async fn hash_existing(part: &Path, hasher: &mut Sha256) -> anyhow::Result<u64> 
     Ok(n_total)
 }
 
-async fn fetch_one(
-    client: reqwest::Client,
-    f: ManifestFile,
-    dir: PathBuf,
-    rep: Arc<Reporter>,
-) -> anyhow::Result<()> {
-    let url = f.url.as_deref().ok_or_else(|| anyhow!("no download url for {}", f.path))?;
-    let dest = dir.join(safe_relative(&f.path)?);
-    if let Some(parent) = dest.parent() {
-        tokio::fs::create_dir_all(parent).await?;
-    }
+/// Raw object: one GET, resumed from the .part with a Range request, hashed on the way in.
+async fn fetch_raw(client: &reqwest::Client, url: &str, f: &ManifestFile, dest: &Path, rep: &Reporter) -> anyhow::Result<()> {
     let part = PathBuf::from(format!("{}.part", dest.display()));
-
-    // resume a half-downloaded .part if there is one and it is not already too big
     let mut hasher = Sha256::new();
     let mut have = 0u64;
     if let Ok(meta) = tokio::fs::metadata(&part).await {
@@ -162,7 +168,7 @@ async fn fetch_one(
     let resp = req.send().await.with_context(|| format!("request for {}", f.path))?;
     let status = resp.status();
     let mut file = if have > 0 && status == reqwest::StatusCode::PARTIAL_CONTENT {
-        rep.add(have, &f.path);
+        rep.add(have, 0, &f.path);
         tokio::fs::OpenOptions::new().append(true).open(&part).await?
     } else if status.is_success() {
         hasher = Sha256::new();
@@ -176,7 +182,7 @@ async fn fetch_one(
         let chunk = chunk.with_context(|| format!("stream for {}", f.path))?;
         hasher.update(&chunk);
         file.write_all(&chunk).await?;
-        rep.add(chunk.len() as u64, &f.path);
+        rep.add(chunk.len() as u64, chunk.len() as u64, &f.path);
     }
     file.flush().await?;
     drop(file);
@@ -190,6 +196,31 @@ async fn fetch_one(
         let _ = tokio::fs::remove_file(&dest).await;
     }
     tokio::fs::rename(&part, &dest).await?;
+    Ok(())
+}
+
+async fn fetch_one(
+    client: reqwest::Client,
+    f: ManifestFile,
+    dir: PathBuf,
+    block: Option<u32>,
+    rep: Arc<Reporter>,
+) -> anyhow::Result<()> {
+    let url = f.url.as_deref().ok_or_else(|| anyhow!("no download url for {}", f.path))?;
+    let dest = dir.join(safe_relative(&f.path)?);
+    if let Some(parent) = dest.parent() {
+        tokio::fs::create_dir_all(parent).await?;
+    }
+    match block {
+        Some(block) => {
+            let (r, path) = (rep.clone(), f.path.clone());
+            let tick: crate::delta::Tick = Arc::new(move |done, net| r.add(done, net, &path));
+            crate::delta::fetch_blob(&client, url, f.size, &f.sha256, block, &dest, tick)
+                .await
+                .with_context(|| format!("updating {}", f.path))?;
+        }
+        None => fetch_raw(&client, url, &f, &dest, &rep).await?,
+    }
     set_exec(&dest, f.exec)?;
     Ok(())
 }
@@ -212,18 +243,27 @@ fn set_exec(_path: &Path, _exec: bool) -> anyhow::Result<()> {
 
 /// Downloads everything in the plan, removes leftovers, records the new version.
 pub async fn apply(app: AppHandle, dir: PathBuf, manifest: &Manifest, plan: Plan) -> anyhow::Result<()> {
+    apply_with(Arc::new(app), dir, manifest, plan).await
+}
+
+pub async fn apply_with(sink: Arc<dyn ProgressSink>, dir: PathBuf, manifest: &Manifest, plan: Plan) -> anyhow::Result<()> {
     std::fs::create_dir_all(&dir)?;
     let rep = Arc::new(Reporter {
-        app: app.clone(),
+        sink: sink.clone(),
         done: AtomicU64::new(0),
+        downloaded: AtomicU64::new(0),
         total: plan.bytes.max(1),
         last: Mutex::new(Instant::now() - Duration::from_secs(1)),
-        current: Mutex::new(String::new()),
     });
+    let block = match manifest.format.as_deref() {
+        Some("glb1") => Some(manifest.block.unwrap_or(131072)),
+        Some(other) => bail!("this launcher does not understand build format {other}; update the launcher"),
+        None => None,
+    };
     let client = crate::net::client();
     futures_util::stream::iter(plan.to_download.into_iter().map(|f| {
         let (client, dir, rep) = (client.clone(), dir.clone(), rep.clone());
-        async move { fetch_one(client, f, dir, rep).await }
+        async move { fetch_one(client, f, dir, block, rep).await }
     }))
     .buffer_unordered(PARALLEL)
     .try_collect::<Vec<()>>()
@@ -252,12 +292,17 @@ pub async fn apply(app: AppHandle, dir: PathBuf, manifest: &Manifest, plan: Plan
                 .collect(),
         },
     )?;
-    let _ = app.emit("progress", Progress { done: rep.total, total: rep.total, file: String::new() });
+    sink.progress(Progress {
+        done: rep.total,
+        total: rep.total,
+        downloaded: rep.downloaded.load(Ordering::Relaxed),
+        file: String::new(),
+    });
     Ok(())
 }
 
 /// Re-hashes every recorded file; entries that do not match are dropped so the next check re-downloads them.
-pub fn verify(dir: &Path, app: &AppHandle) -> anyhow::Result<usize> {
+pub fn verify(dir: &Path, sink: &dyn ProgressSink) -> anyhow::Result<usize> {
     let Some(mut installed) = load_installed(dir) else { return Ok(0) };
     let total: u64 = installed.files.iter().map(|f| f.size).sum();
     let mut done = 0u64;
@@ -273,7 +318,7 @@ pub fn verify(dir: &Path, app: &AppHandle) -> anyhow::Result<usize> {
             })
             .unwrap_or(false);
         done += f.size;
-        let _ = app.emit("progress", Progress { done, total: total.max(1), file: f.path.clone() });
+        sink.progress(Progress { done, total: total.max(1), downloaded: 0, file: f.path.clone() });
         if ok {
             kept.push(f);
         } else {

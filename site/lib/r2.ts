@@ -34,7 +34,7 @@ export function presign(key: string, seconds = 3600): Promise<string> {
   return getSignedUrl(r2(), new GetObjectCommand({ Bucket: bucket(), Key: key }), { expiresIn: seconds });
 }
 
-export type ManifestFile = { path: string; sha256: string; size: number; exec?: boolean };
+export type ManifestFile = { path: string; sha256: string; size: number; exec?: boolean; stored?: number };
 export type Manifest = {
   version: string;
   platform: "windows" | "linux";
@@ -43,4 +43,8 @@ export type Manifest = {
   exec: string;
   total: number;
   files: ManifestFile[];
+  /** absent = raw objects; "glb1" = block blobs (publish_build.py --format glb1) */
+  format?: "glb1";
+  block?: number;
+  stored?: number;
 };

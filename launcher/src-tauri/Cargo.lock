@@ -1467,6 +1467,7 @@ version = "0.2.2"
 dependencies = [
  "anyhow",
  "dirs",
+ "flate2",
  "futures-util",
  "hex",
  "reqwest 0.12.28",

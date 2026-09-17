@@ -12,6 +12,9 @@ pub struct ManifestFile {
     pub exec: bool,
     #[serde(default)]
     pub url: Option<String>,
+    /// glb1: size of the blob in the store (what a fresh install downloads)
+    #[serde(default)]
+    pub stored: Option<u64>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -26,6 +29,11 @@ pub struct Manifest {
     pub commit: Option<String>,
     #[serde(default, rename = "urlExpiresAt")]
     pub url_expires_at: Option<u64>,
+    /// None = raw objects; "glb1" = block blobs (delta.rs)
+    #[serde(default)]
+    pub format: Option<String>,
+    #[serde(default)]
+    pub block: Option<u32>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

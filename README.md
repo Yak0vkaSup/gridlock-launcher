@@ -9,7 +9,12 @@ the game up to date by downloading only the files that changed.
 - `launcher/` Tauri 2 app (Rust + plain HTML/JS). Loopback sign-in, content-addressed downloads with
   resume and SHA-256 checks, verify, play; updates itself from this repo's GitHub Releases.
 - Game builds are published by the game repo's `Package` workflow (`.github/scripts/publish_build.py`
-  there) into R2 as `objects/<sha256>` + `builds/<platform>/<version>.json`.
+  there) into R2 as `blobs/<sha256>` + `builds/<platform>/<version>.json`. A blob is the file cut into
+  128 KiB blocks behind a table of per-block hashes (`launcher/src-tauri/src/delta.rs` documents the
+  layout); an update keeps every block the old copy of a file still holds, wherever it moved to, and
+  fetches the rest with Range requests, so a new build costs tens of MB instead of the 2.4 GB .ucas + exe.
+  Manifests without `format` point at raw `objects/<sha256>` (builds before 2026-09-16, the server's
+  deploy script); the launcher handles both.
 
 ## Site
 

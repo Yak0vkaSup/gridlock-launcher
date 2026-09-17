@@ -14,10 +14,12 @@ const mb = (b) => (b / 1048576).toFixed(b >= 1048576 * 100 ? 0 : 1) + " MB";
 const gb = (b) => (b >= 1073741824 ? (b / 1073741824).toFixed(2) + " GB" : mb(b));
 
 function setError(msg) { const e = $("error"); e.hidden = !msg; e.textContent = msg || ""; }
-function setProgress(done, total, file) {
+function setProgress(done, total, file, downloaded) {
   const bar = $("bar"); bar.hidden = false;
   $("fill").style.width = Math.min(100, (100 * done) / Math.max(1, total)).toFixed(1) + "%";
-  $("detail").textContent = `${gb(done)} / ${gb(total)}${file ? "  ·  " + file.split("/").pop() : ""}`;
+  // done counts what is settled (reused from the old files or fetched); downloaded is the wire
+  const net = downloaded === undefined ? done : downloaded;
+  $("detail").textContent = `${gb(net)} downloaded${file ? "  ·  " + file.split("/").pop() : ""}`;
 }
 
 function render() {
@@ -50,7 +52,8 @@ function render() {
   }
   const fresh = !c.installed;
   $("status").textContent = fresh ? `Install ${c.latest}` : `Update ${c.installed} → ${c.latest}`;
-  if (!ui.busy) { $("detail").textContent = `${c.files} files, ${gb(c.bytes)} to download`; $("bar").hidden = true; }
+  // an update reuses whatever the old files still hold, so the size is only an upper bound
+  if (!ui.busy) { $("detail").textContent = fresh ? `${c.files} files, ${gb(c.bytes)}` : `${c.files} files, up to ${gb(c.bytes)}`; $("bar").hidden = true; }
   btn.textContent = fresh ? "Install" : "Update"; btn.onclick = doInstall;
 }
 
@@ -122,7 +125,7 @@ $("btn-verify").onclick = () => run(async () => {
   $("bar").hidden = true;
 });
 
-T.event.listen("progress", (ev) => { const p = ev.payload; setProgress(p.done, p.total, p.file); });
+T.event.listen("progress", (ev) => { const p = ev.payload; setProgress(p.done, p.total, p.file, p.downloaded); });
 
 // launcher self-update (signed, from GitHub Releases): installs itself and restarts before
 // anything else happens, so nobody keeps an old launcher around. Offline: carry on as we are.

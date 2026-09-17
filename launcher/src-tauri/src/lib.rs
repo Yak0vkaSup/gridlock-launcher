@@ -2,6 +2,7 @@
 
 mod auth;
 mod config;
+mod delta;
 mod install;
 mod net;
 

@@ -8,7 +8,9 @@ export const dynamic = "force-dynamic";
 const URL_SECONDS = 3600;
 
 // The launcher asks for the newest build of its platform and gets the manifest with a presigned
-// URL per file (content-addressed: objects/<sha256>), so only changed files are ever downloaded.
+// URL per file. Two store layouts, told apart by the manifest's `format`: raw objects (objects/<sha256>,
+// launchers before 0.3.0) and glb1 blobs (blobs/<sha256>, block tables that let the launcher fetch
+// only the blocks its old copy of the file lacks).
 export async function GET(req: Request) {
   const user = await requireLauncherUser(req);
   if (user instanceof NextResponse) return user;
@@ -22,8 +24,9 @@ export async function GET(req: Request) {
   const manifest = await getJson<Manifest>(`builds/${platform}/${latest.version}.json`);
   if (!manifest) return NextResponse.json({ error: "manifest missing" }, { status: 500 });
 
+  const store = manifest.format === "glb1" ? "blobs" : "objects";
   const files = await Promise.all(
-    manifest.files.map(async (f) => ({ ...f, url: await presign(`objects/${f.sha256}`, URL_SECONDS) })),
+    manifest.files.map(async (f) => ({ ...f, url: await presign(`${store}/${f.sha256}`, URL_SECONDS) })),
   );
   return NextResponse.json({ ...manifest, files, urlExpiresAt: Date.now() + URL_SECONDS * 1000 });
 }
