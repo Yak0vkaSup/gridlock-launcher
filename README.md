@@ -30,6 +30,7 @@ cd launcher && npm ci && npm run dev    # needs Rust and, on Linux, the Tauri we
 GRIDLOCK_SITE=https://preview.vercel.app npm run dev   # point it at another deployment
 ```
 
-Release: bump `version` in `launcher/src-tauri/tauri.conf.json` and `launcher/package.json`, then
+Release: bump `version` in `launcher/src-tauri/tauri.conf.json`, `launcher/src-tauri/Cargo.toml` and
+`launcher/package.json`, then
 `git tag launcher-v<version> && git push --tags`; the Launcher workflow builds both platforms and
 publishes the release with `latest.json` for the updater. Signing key: `TAURI_SIGNING_PRIVATE_KEY` secret.

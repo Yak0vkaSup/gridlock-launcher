@@ -83,10 +83,41 @@ async function refresh() {
 const doLogin = () => run(async () => {
   $("status").textContent = "Waiting for the browser…";
   $("detail").textContent = "Finish signing in on the page that opened.";
-  ui.user = await invoke("login");
+  try { ui.user = await invoke("login"); }
+  finally { hideLoginLink(); }
   ui.state = await invoke("get_state");
   ui.check = await invoke("check");
 });
+
+// The sign-in link, for when no browser shows up (a broken xdg-open, an odd desktop): the Rust side
+// sends it as soon as it tried to open the browser, with whether that worked.
+let loginLink = null;
+function showLoginLink(text) {
+  if (!loginLink) return;
+  $("login-link-text").textContent = text;
+  $("login-url").value = loginLink.url;
+  $("login-link").hidden = false;
+}
+function hideLoginLink() { loginLink = null; $("login-link").hidden = true; }
+T.event.listen("login-url", (ev) => {
+  loginLink = ev.payload;
+  if (!loginLink.opened) {
+    $("status").textContent = "Sign in in your browser";
+    $("detail").textContent = loginLink.error ? "No browser opened: " + loginLink.error : "No browser opened.";
+    showLoginLink("Open this link yourself:");
+  } else {
+    setTimeout(() => showLoginLink("Browser didn't open? Use this link:"), 5000);
+  }
+});
+$("login-url").onclick = (e) => e.target.select();
+$("btn-copy").onclick = async () => {
+  const el = $("login-url"); el.focus(); el.select();
+  let ok = false;
+  try { await navigator.clipboard.writeText(el.value); ok = true; } catch (_) {}
+  if (!ok) { try { ok = document.execCommand("copy"); } catch (_) {} }
+  $("btn-copy").textContent = ok ? "Copied" : "Select all and copy";
+  setTimeout(() => { $("btn-copy").textContent = "Copy"; }, 1500);
+};
 
 const doInstall = () => run(async () => {
   $("status").textContent = ui.check && ui.check.installed ? "Updating…" : "Installing…";

@@ -3,6 +3,7 @@
 mod auth;
 mod config;
 mod delta;
+mod host;
 mod install;
 mod net;
 
@@ -69,10 +70,10 @@ fn get_state() -> StateInfo {
 }
 
 #[tauri::command]
-async fn login() -> Result<UserInfo, String> {
+async fn login(app: AppHandle) -> Result<UserInfo, String> {
     let mut cfg = config::load();
     let site = cfg.site();
-    let tok = auth::login(&site).await.map_err(|e| e.to_string())?;
+    let tok = auth::login(&app, &site).await.map_err(|e| e.to_string())?;
     let user = net::me(&site, &tok).await.map_err(|e| e.to_string())?;
     cfg.token = Some(tok);
     config::save(&cfg).map_err(|e| e.to_string())?;
@@ -158,7 +159,8 @@ fn play() -> Result<(), String> {
     if !path.exists() {
         return Err(format!("{} is missing; run Verify", path.display()));
     }
-    std::process::Command::new(&path)
+    // the host's environment, not the AppImage's (host.rs): the game must find its own libraries
+    host::command(&path)
         .current_dir(&dir)
         .spawn()
         .map(|_| ())
@@ -183,7 +185,7 @@ fn set_install_dir(path: String) -> Result<String, String> {
 #[tauri::command]
 fn open_install_dir() -> Result<(), String> {
     let dir = config::load().install_dir();
-    tauri_plugin_opener::open_path(dir.display().to_string(), None::<&str>).map_err(|e| e.to_string())
+    host::open_path(&dir).map_err(|e| e.to_string())
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]

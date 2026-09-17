@@ -1,6 +1,6 @@
 [package]
 name = "gridlock-launcher"
-version = "0.3.0"
+version = "0.3.1"
 description = "GridLock demo launcher: sign in, install, keep the game updated, play"
 edition = "2021"
 

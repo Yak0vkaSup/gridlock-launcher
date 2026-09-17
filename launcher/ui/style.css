@@ -18,6 +18,10 @@ main { display: flex; flex-direction: column; align-items: center; justify-conte
 .main:not(:disabled):hover { background: var(--accent-hover); }
 .error { color: var(--danger); font-size: 13px; max-width: 560px; text-align: center; white-space: pre-wrap; }
 .update { font-size: 13px; color: var(--muted); }
+.login-link { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 100%; max-width: 560px; font-size: 13px; }
+.login-link .row { display: flex; align-items: center; gap: 6px; width: 100%; }
+.login-link input { flex: 1; min-width: 0; font: inherit; font-size: 12px; color: var(--fg); background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 6px 8px; user-select: text; }
+.login-link input:focus { outline: 1px solid var(--accent); }
 .bottom { display: flex; align-items: center; gap: 10px; padding: 0 24px; border-top: 1px solid var(--line); font-size: 12px; }
 .path { color: var(--fg); max-width: 380px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; direction: rtl; }
 .spacer { flex: 1; }
