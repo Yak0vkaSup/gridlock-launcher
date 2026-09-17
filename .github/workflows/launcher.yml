@@ -1,8 +1,9 @@
 # Builds the launcher for Windows and Linux on GitHub-hosted runners and publishes a GitHub Release
 # (installers + latest.json for the in-app updater). Trigger: push a tag launcher-v<version> that matches
-# launcher/src-tauri/tauri.conf.json, or run it by hand. latest.json is written by the `manifest` job
-# after both builds (launcher/scripts/updater_json.py), not by tauri-action inside each build: its
-# download / delete / upload of the shared file lost the manifest once (0.3.1).
+# launcher/src-tauri/tauri.conf.json, or run it by hand. tauri-action creates the release as a draft;
+# the `manifest` job writes latest.json from the assets (launcher/scripts/updater_json.py) and publishes
+# it, so the site's download buttons and the launchers' updater never see a half-uploaded release.
+# (tauri-action's own latest.json, written inside each build, was lost once to a failed upload: 0.3.1.)
 name: Launcher
 
 on:
@@ -59,7 +60,7 @@ jobs:
           tagName: launcher-v__VERSION__
           releaseName: "GridLock Launcher v__VERSION__"
           releaseBody: "Windows: the -setup.exe. Linux: the .AppImage (chmod +x) or the .deb."
-          releaseDraft: false
+          releaseDraft: true
           prerelease: false
           includeUpdaterJson: false
           # tauri-bundler downloads linuxdeploy/AppRun from GitHub at bundle time; a reset connection failed a run once.
@@ -73,7 +74,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: latest.json from the release assets
+      - name: latest.json from the release assets, then publish the draft
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: python3 launcher/scripts/updater_json.py "$GITHUB_REF_NAME" --upload
+        run: python3 launcher/scripts/updater_json.py "$GITHUB_REF_NAME" --upload --publish

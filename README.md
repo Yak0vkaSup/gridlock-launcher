@@ -32,5 +32,6 @@ GRIDLOCK_SITE=https://preview.vercel.app npm run dev   # point it at another dep
 
 Release: bump `version` in `launcher/src-tauri/tauri.conf.json`, `launcher/src-tauri/Cargo.toml` and
 `launcher/package.json`, then
-`git tag launcher-v<version> && git push --tags`; the Launcher workflow builds both platforms and
-publishes the release with `latest.json` for the updater. Signing key: `TAURI_SIGNING_PRIVATE_KEY` secret.
+`git tag launcher-v<version> && git push --tags`; the Launcher workflow builds both platforms into a draft
+release, and its last job writes `latest.json` for the updater and publishes the draft, so the site and the
+launchers only ever see a complete release. Signing key: `TAURI_SIGNING_PRIVATE_KEY` secret.
