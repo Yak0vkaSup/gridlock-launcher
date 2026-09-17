@@ -7,3 +7,4 @@ site/out/
 launcher/src-tauri/target/
 launcher/src-tauri/gen/schemas/
 launcher/app-icon.png
+__pycache__/
